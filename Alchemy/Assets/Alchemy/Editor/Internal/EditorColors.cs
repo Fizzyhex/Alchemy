@@ -67,5 +67,14 @@ namespace Alchemy.Editor
                 else return GetColor("#090909");
             }
         }
+
+        public static Color UnpickedText
+        {
+            get
+            {
+                if (EditorGUIUtility.isProSkin) return GetColor("#a1a1a1");
+                else return GetColor("#292929");
+            }
+        }
     }
 }

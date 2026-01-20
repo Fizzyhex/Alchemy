@@ -36,13 +36,22 @@ namespace Alchemy.Editor.Elements
                 var dropdownRect = position;
                 dropdownRect.height = EditorGUIUtility.singleLineHeight;
 
-                var buttonLabel = EditorIcons.CsScriptIcon;
+                var isPicked = property != null && property.managedReferenceValue != null;
+
+                var disabledStyle = new GUIStyle("objectField");
+                disabledStyle.normal.textColor = EditorColors.UnpickedText;
+                
+                var buttonLabel = isPicked ? EditorIcons.CsScriptIcon : new GUIContent();
 
                 try
                 {
                     if (property != null)
                     {
-                        buttonLabel.text = (property.managedReferenceValue == null ? "Null" : property.managedReferenceValue.GetType().GetNameCS())
+                        var isNull = property.managedReferenceValue == null;
+
+                        buttonLabel.text = (isNull
+                            ? $"None ({property.GetManagedReferenceFieldType().GetNameCS(fullName: false)})"
+                            : property.managedReferenceValue.GetType().GetNameCS(fullName: false));
                     }
                 }
                 catch (InvalidOperationException)
@@ -50,8 +59,8 @@ namespace Alchemy.Editor.Elements
                     // Ignoring exceptions when disposed (bad solution)
                     return;
                 }
-
-                if (GUI.Button(dropdownRect, buttonLabel, EditorStyles.objectField))
+                
+                if ((isPicked && GUI.Button(dropdownRect, buttonLabel, EditorStyles.objectField)) || GUI.Button(dropdownRect, buttonLabel, disabledStyle))
                 {
                     const int MaxTypePopupLineCount = 13;
 
