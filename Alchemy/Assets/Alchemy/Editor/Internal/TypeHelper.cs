@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Alchemy.Editor
 {
@@ -66,12 +67,6 @@ namespace Alchemy.Editor
         {
             if (type == null)
                 return "";
-
-            // Check if we have already got the name for that type.
-            var names = fullName ? FullTypeNames : TypeNames;
-            string name;
-            if (names.TryGetValue(type, out name))
-                return name;
 
             var text = new StringBuilder();
 
@@ -151,9 +146,58 @@ namespace Alchemy.Editor
             AppendNameAndGenericArguments(text, type, fullName, genericArguments);
 
             Return:// Remember and return the name.
-            name = text.ToString();
-            names.Add(type, name);
+            var name = text.ToString();
             return name;
+        }
+        
+        /// <summary>
+        /// Appends the generic arguments of `type` (after skipping the specified number).
+        /// </summary>
+        public static int AppendNameAndGenericArguments(StringBuilder text, Type type, bool fullName = true, int skipGenericArguments = 0)
+        {
+            text.Append(type.Name);
+
+            if (type.IsGenericType)
+            {
+                var backQuote = type.Name.IndexOf('`');
+                if (backQuote >= 0)
+                {
+                    text.Length -= type.Name.Length - backQuote;
+
+                    var genericArguments = type.GetGenericArguments();
+                    if (skipGenericArguments < genericArguments.Length)
+                    {
+                        text.Append('<');
+
+                        var firstArgument = genericArguments[skipGenericArguments];
+                        skipGenericArguments++;
+
+                        if (firstArgument.IsGenericParameter)
+                        {
+                            while (skipGenericArguments < genericArguments.Length)
+                            {
+                                text.Append(',');
+                                skipGenericArguments++;
+                            }
+                        }
+                        else
+                        {
+                            text.Append(firstArgument.GetNameCS(fullName));
+
+                            while (skipGenericArguments < genericArguments.Length)
+                            {
+                                text.Append(", ");
+                                text.Append(genericArguments[skipGenericArguments].GetNameCS(fullName));
+                                skipGenericArguments++;
+                            }
+                        }
+
+                        text.Append('>');
+                    }
+                }
+            }
+
+            return skipGenericArguments;
         }
     }
 }
