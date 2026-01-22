@@ -1,11 +1,14 @@
 using System;
 using System.Linq;
+using System.Reflection;
+using Alchemy.Inspector;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
+using static System.String;
 
 namespace Alchemy.Editor.Elements
 {
@@ -48,10 +51,17 @@ namespace Alchemy.Editor.Elements
                     if (property != null)
                     {
                         var isNull = property.managedReferenceValue == null;
+                        var fieldType = property.GetManagedReferenceFieldType();
+                        var type = isNull ? fieldType : property.managedReferenceValue.GetType();
+                        var nameOverride = type.GetCustomAttribute<DisplayAs>();
+                        var complexName = type.GetNameCS(fullName: false);
+                        
+                        buttonLabel.text = nameOverride != null ? nameOverride.Title : isNull
+                            ? $"None ({complexName})"
+                            : complexName;
 
-                        buttonLabel.text = (isNull
-                            ? $"None ({property.GetManagedReferenceFieldType().GetNameCS(fullName: false)})"
-                            : property.managedReferenceValue.GetType().GetNameCS(fullName: false));
+                        var description = nameOverride?.Description;
+                        buttonLabel.tooltip = (IsNullOrEmpty(description) ? Empty : description + "\n\n") + $"Type Name: {complexName}\n\nImplements: {fieldType}";
                     }
                 }
                 catch (InvalidOperationException)
@@ -59,8 +69,12 @@ namespace Alchemy.Editor.Elements
                     // Ignoring exceptions when disposed (bad solution)
                     return;
                 }
+
+                var isClicked = isPicked
+                    ? GUI.Button(dropdownRect, buttonLabel, EditorStyles.objectField)
+                    : GUI.Button(dropdownRect, buttonLabel, disabledStyle);
                 
-                if ((isPicked && GUI.Button(dropdownRect, buttonLabel, EditorStyles.objectField)) || GUI.Button(dropdownRect, buttonLabel, disabledStyle))
+                if (isClicked)
                 {
                     const int MaxTypePopupLineCount = 13;
 
